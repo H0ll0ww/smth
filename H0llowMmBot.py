@@ -46,6 +46,8 @@ async def close_chat(message: types.Message):
     await bot.send_message(message.from_id, 'Один из участников завершил чат')
     dictionary[str(message.from_id)] = -1
     dictionary[str(id)] = -1
+
+
 @dp.message_handler()
 async def send_messages(message: types.Message):
     mess = []
