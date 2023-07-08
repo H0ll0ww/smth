@@ -33,5 +33,3 @@ async def echo(message: types.Message, state: FSMContext):
 
 
 executor.start_polling(dp, skip_updates=True)
-
-
