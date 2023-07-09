@@ -6,6 +6,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from sympy import symbols, Eq, solve
 
+
 a = 10
 fst = ''
 bot = Bot(token=TOKEN)
@@ -29,14 +30,22 @@ async def get_graph(message: types.Message,state: FSMContext):
     await state.set_state('function')
 
 
+def create1(s, x):
+    return eval(s)
+
+
 def create(s):
     s = s.replace(' ', '')
     s = s.replace('^', '**')
     s = s[2:]
     n = len(s) - 1
     for i in range(n):
-        if s[i].isdigit() or s[i] == 'x':
-            if s[i+1].isdigit() or s[i+1] == 'x':
+        if s[i].isdigit():
+            if s[i+1] == 'x':
+                n += 1
+                s = s[:i+1] + '*' + s[i+1:]
+        elif s[i] == 'x':
+            if s[i+1].isdigit():
                 n += 1
                 s = s[:i+1] + '*' + s[i+1:]
     return s
@@ -48,14 +57,18 @@ def my_function(s, x):
     s = s[2:]
     n = len(s) - 1
     for i in range(n):
-        if s[i].isdigit() or s[i] == 'x':
-            if s[i+1].isdigit() or s[i+1] == 'x':
+        if s[i].isdigit():
+            if s[i+1] == 'x':
+                n += 1
+                s = s[:i+1] + '*' + s[i+1:]
+        elif s[i] == 'x':
+            if s[i+1].isdigit():
                 n += 1
                 s = s[:i+1] + '*' + s[i+1:]
     return eval(s)
 
 
-@dp.message_handler(commands=['get_number_of_crossings'])
+@dp.message_handler(commands=['get_number_of_crossings'], state='*')
 async def get(message: types.Message, state: FSMContext):
     await message.answer('Введите 1-ую функцию вида y = f(x)')
     await state.set_state('1_function')
@@ -80,7 +93,11 @@ async def get_2(message: types.Message, state: FSMContext):
     equation = Eq(eval(scn), eval(fst))
     solution = solve(equation, x)
     sorted(solution)
-    x = np.linspace(int(solution[0]) - 10, int(solution[len(solution) - 1]) + 10, 100)
+    solutiony = []
+    for znach in solution:
+        solutiony.append(create1(scn, znach))
+    sorted(solutiony)
+    x = np.linspace(int(solution[0]) - 5, int(solution[len(solution) - 1]) + 5, 100)
     y = eval(scn)
     plt.plot(x, y)
     y = eval(fst)
@@ -90,6 +107,7 @@ async def get_2(message: types.Message, state: FSMContext):
     plt.grid = True
     plt.axhline(0, color='black')
     plt.axvline(0, color='black')
+    plt.ylim(int(solutiony[0]) - 5, int(solutiony[len(solutiony) - 1]) + 5)
     plt.savefig('graph.jpg')
     file = open('graph.jpg', 'rb')
     await bot.send_message(message.from_id, 'Количество пересечений - ' + str(len(solution)))
@@ -120,6 +138,7 @@ async def draw_graph(message: types.Message, state: FSMContext):
     global a
     x = np.linspace(-a, a, 10 * a)
     y = my_function(message.text.lower(), x)
+    plt.ylim(-a, a)
     plt.plot(x, y)
     plt.xlabel('x')
     plt.ylabel('y')
