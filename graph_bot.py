@@ -14,7 +14,6 @@ b2 = KeyboardButton(r'/clear_board')
 b3 = KeyboardButton(r'/set_borders')
 b4 = KeyboardButton(r'/get_number_of_crossings')
 choose_chat_type_keyboard = ReplyKeyboardMarkup(resize_keyboard=True).insert(b1).insert(b2).add(b3).insert(b4)
-a = 10
 fst = ''
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
@@ -27,7 +26,8 @@ async def clear(message: types.Message):
 
 
 @dp.message_handler(commands=['start'], state='*')
-async def start_handler(message: types.Message):
+async def start_handler(message: types.Message, state: FSMContext):
+    await state.update_data(borders=10)
     await message.answer('Добро пожаловать в бота, строящего графики.', reply_markup=choose_chat_type_keyboard)
 
 
@@ -132,22 +132,21 @@ async def set(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state='border')
 async def set_bor(message: types.Message, state: FSMContext):
-    global a
     await state.set_state('*')
     if message.text.replace(' ', '').isdigit():
         await bot.send_message(message.from_id, 'Границы доски изменены.',
                                reply_markup=choose_chat_type_keyboard)
-        a = int(message.text.replace(' ', ''))
+        await state.update_data(borders=int(message.text.replace(' ', '')))
 
 
 @dp.message_handler(state='function')
 async def draw_graph(message: types.Message, state: FSMContext):
     await state.set_state('*')
     await bot.send_message(message.from_id, 'Секунду...')
-    global a
-    x = np.linspace(-a, a, 10 * a)
+    data = await state.get_data()
+    x = np.linspace(-1 * int(data['borders']), int(data['borders']), 10 * int(data['borders']))
     y = my_function(message.text.lower(), x)
-    plt.ylim(-a, a)
+    plt.ylim(-1 * int(data['borders']), int(data['borders']))
     plt.plot(x, y)
     plt.xlabel('x')
     plt.ylabel('y')
@@ -163,7 +162,7 @@ async def draw_graph(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(state='*')
-async def pst(message: types.Message, state: FSMContext):
+async def pst(message: types.Message):
     await message.answer('Если вы хотите воспользоваться ботом, вызовите 1 из команд.', reply_markup=choose_chat_type_keyboard)
 
 
