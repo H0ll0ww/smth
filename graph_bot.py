@@ -2,11 +2,18 @@ from aiogram import Bot, Dispatcher, executor, types
 from config import TOKEN
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy import sin, cos, tan
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from sympy import symbols, Eq, solve
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 
 
+b1 = KeyboardButton(r'/draw_graphic')
+b2 = KeyboardButton(r'/clear_board')
+b3 = KeyboardButton(r'/set_borders')
+b4 = KeyboardButton(r'/get_number_of_crossings')
+choose_chat_type_keyboard = ReplyKeyboardMarkup(resize_keyboard=True).insert(b1).insert(b2).add(b3).insert(b4)
 a = 10
 fst = ''
 bot = Bot(token=TOKEN)
@@ -14,19 +21,19 @@ dp = Dispatcher(bot, storage=MemoryStorage())
 
 
 @dp.message_handler(commands=['clear_board'], state='*')
-async def clear(message: types.Message, state: FSMContext):
+async def clear(message: types.Message):
     plt.clf()
     await message.answer('Доска очищена.')
 
 
 @dp.message_handler(commands=['start'], state='*')
-async def start_handler(message: types.Message, state: FSMContext):
-    await message.answer('Добро пожаловать в бота, строящего графики.')
+async def start_handler(message: types.Message):
+    await message.answer('Добро пожаловать в бота, строящего графики.', reply_markup=choose_chat_type_keyboard)
 
 
 @dp.message_handler(commands=['draw_graphic'], state='*')
-async def get_graph(message: types.Message,state: FSMContext):
-    await message.answer('Введите функцию вида y = f(x)')
+async def get_graph(message: types.Message, state: FSMContext):
+    await message.answer('Введите функцию вида y = f(x)', reply_markup=ReplyKeyboardRemove())
     await state.set_state('function')
 
 
@@ -70,7 +77,7 @@ def my_function(s, x):
 
 @dp.message_handler(commands=['get_number_of_crossings'], state='*')
 async def get(message: types.Message, state: FSMContext):
-    await message.answer('Введите 1-ую функцию вида y = f(x)')
+    await message.answer('Введите 1-ую функцию вида y = f(x)', reply_markup=ReplyKeyboardRemove())
     await state.set_state('1_function')
 
 
@@ -112,13 +119,14 @@ async def get_2(message: types.Message, state: FSMContext):
     file = open('graph.jpg', 'rb')
     await bot.send_message(message.from_id, 'Количество пересечений - ' + str(len(solution)))
     await bot.send_message(message.from_id, 'Пересечения при x = ' + str(solution) )
-    await message.bot.send_photo(message.from_id, file)
+    await message.bot.send_photo(message.from_id, file,
+                                 reply_markup=choose_chat_type_keyboard)
     file.close()
 
 
 @dp.message_handler(commands=['set_borders'], state='*')
 async def set(message: types.Message, state: FSMContext):
-    await message.answer('Введите 1 целое число.')
+    await message.answer('Введите 1 целое число.', reply_markup=ReplyKeyboardRemove())
     await state.set_state('border')
 
 
@@ -127,7 +135,8 @@ async def set_bor(message: types.Message, state: FSMContext):
     global a
     await state.set_state('*')
     if message.text.replace(' ', '').isdigit():
-        await bot.send_message(message.from_id, 'Границы доски изменены.')
+        await bot.send_message(message.from_id, 'Границы доски изменены.',
+                               reply_markup=choose_chat_type_keyboard)
         a = int(message.text.replace(' ', ''))
 
 
@@ -148,8 +157,14 @@ async def draw_graph(message: types.Message, state: FSMContext):
     plt.axvline(0, color='black')
     plt.savefig('graph.jpg')
     file = open('graph.jpg', 'rb')
-    await message.bot.send_photo(message.from_id, file)
+    await message.bot.send_photo(message.from_id, file,
+                                 reply_markup=choose_chat_type_keyboard)
     file.close()
+
+
+@dp.message_handler(state='*')
+async def pst(message: types.Message, state: FSMContext):
+    await message.answer('Если вы хотите воспользоваться ботом, вызовите 1 из команд.', reply_markup=choose_chat_type_keyboard)
 
 
 executor.start_polling(dp, skip_updates=True)
