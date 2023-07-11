@@ -109,9 +109,9 @@ async def get_2(message: types.Message, state: FSMContext):
     plt.plot(x, y)
     y = eval(fst)
     plt.plot(x, y)
-    plt.xlabel = 'x'
-    plt.ylabel = 'y'
-    plt.grid = True
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.grid(True)
     plt.axhline(0, color='black')
     plt.axvline(0, color='black')
     plt.ylim(int(solutiony[0]) - 5, int(solutiony[len(solutiony) - 1]) + 5)
@@ -163,7 +163,7 @@ async def draw_graph(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state='*')
 async def pst(message: types.Message):
-    await message.answer('Если вы хотите воспользоваться ботом, вызовите 1 из команд.', reply_markup=choose_chat_type_keyboard)
+    await message.answer('Если вы хотите воспользоваться ботом, вызовите 1 из предложенных команд.', reply_markup=choose_chat_type_keyboard)
 
 
 executor.start_polling(dp, skip_updates=True)
