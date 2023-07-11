@@ -27,7 +27,7 @@ async def clear(message: types.Message):
 
 @dp.message_handler(commands=['start'], state='*')
 async def start_handler(message: types.Message, state: FSMContext):
-    await state.update_data(borders=10)
+    await state.update_data(right_border=-10, left_border=10, bottom_border=-10, high_border=10)
     await message.answer('Добро пожаловать в бота, строящего графики.', reply_markup=choose_chat_type_keyboard)
 
 
@@ -125,18 +125,42 @@ async def get_2(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(commands=['set_borders'], state='*')
-async def set(message: types.Message, state: FSMContext):
-    await message.answer('Введите 1 целое число.', reply_markup=ReplyKeyboardRemove())
-    await state.set_state('border')
-
-
-@dp.message_handler(state='border')
 async def set_bor(message: types.Message, state: FSMContext):
+    await message.answer('Введите правую границу(по x).', reply_markup=ReplyKeyboardRemove())
+    await state.set_state('pr_border')
+
+
+@dp.message_handler(state='pr_border')
+async def set_pr(message: types.Message, state: FSMContext):
+    await state.set_state('lf_border')
+    if message.text.replace(' ', '').replace('-', '').isdigit():
+        await bot.send_message(message.from_id, 'Введите левую границу(по x).',)
+        await state.update_data(right_border=int(float(message.text.replace(' ', ''))))
+
+
+@dp.message_handler(state='lf_border')
+async def set_lf(message: types.Message, state: FSMContext):
+    await state.set_state('bottom_border')
+    if message.text.replace(' ', '').replace('-', '').isdigit():
+        await bot.send_message(message.from_id, 'Введите нижнюю границу(по y).',)
+        await state.update_data(left_border=int(float(message.text.replace(' ', ''))))
+
+
+@dp.message_handler(state='bottom_border')
+async def set_high(message: types.Message, state: FSMContext):
+    await state.set_state('high_border')
+    if message.text.replace(' ', '').replace('-', '').isdigit():
+        await bot.send_message(message.from_id, 'Введите верхнюю границу(по y).',)
+        await state.update_data(bottom_border=int(float(message.text.replace(' ', ''))))
+
+
+@dp.message_handler(state='high_border')
+async def set_bottom(message: types.Message, state: FSMContext):
     await state.set_state('*')
-    if message.text.replace(' ', '').isdigit():
-        await bot.send_message(message.from_id, 'Границы доски изменены.',
+    if message.text.replace(' ', '').replace('-', '').isdigit():
+        await bot.send_message(message.from_id, 'Границы изменены.',
                                reply_markup=choose_chat_type_keyboard)
-        await state.update_data(borders=int(message.text.replace(' ', '')))
+        await state.update_data(high_border=int(float(message.text.replace(' ', ''))))
 
 
 @dp.message_handler(state='function')
@@ -144,9 +168,10 @@ async def draw_graph(message: types.Message, state: FSMContext):
     await state.set_state('*')
     await bot.send_message(message.from_id, 'Секунду...')
     data = await state.get_data()
-    x = np.linspace(-1 * int(data['borders']), int(data['borders']), 10 * int(data['borders']))
+    x = np.linspace(int(data['right_border']), int(data['left_border']),
+                    10 * int(data['left_border'] - data['right_border']))
     y = my_function(message.text.lower(), x)
-    plt.ylim(-1 * int(data['borders']), int(data['borders']))
+    plt.ylim(int(data['bottom_border']), int(data['high_border']))
     plt.plot(x, y)
     plt.xlabel('x')
     plt.ylabel('y')
@@ -163,7 +188,8 @@ async def draw_graph(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state='*')
 async def pst(message: types.Message):
-    await message.answer('Если вы хотите воспользоваться ботом, вызовите 1 из предложенных команд.', reply_markup=choose_chat_type_keyboard)
+    await message.answer('Если вы хотите воспользоваться ботом, вызовите 1 из предложенных команд.',
+                         reply_markup=choose_chat_type_keyboard)
 
 
 executor.start_polling(dp, skip_updates=True)
