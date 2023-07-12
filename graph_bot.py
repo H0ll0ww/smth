@@ -23,7 +23,7 @@ dp = Dispatcher(bot, storage=MemoryStorage())
 @dp.message_handler(commands=['clear_board'], state='*')
 async def clear(message: types.Message):
     plt.clf()
-    await message.answer('Доска очищена.')
+    await message.answer('Доска очищена.', reply_markup=choose_chat_type_keyboard)
 
 
 @dp.message_handler(commands=['start'], state='*')
