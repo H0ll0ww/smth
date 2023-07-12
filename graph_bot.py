@@ -14,7 +14,6 @@ b2 = KeyboardButton(r'/clear_board')
 b3 = KeyboardButton(r'/set_borders')
 b4 = KeyboardButton(r'/get_number_of_crossings')
 choose_chat_type_keyboard = ReplyKeyboardMarkup(resize_keyboard=True).insert(b1).insert(b2).add(b3).insert(b4)
-fst = ''
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
@@ -27,7 +26,7 @@ async def clear(message: types.Message):
 
 @dp.message_handler(commands=['start'], state='*')
 async def start_handler(message: types.Message, state: FSMContext):
-    await state.update_data(right_border=-10, left_border=10, bottom_border=-10, high_border=10)
+    await state.update_data(right_border=-10, left_border=10, bottom_border=-10, high_border=10, fst='')
     await message.answer('Добро пожаловать в бота, строящего графики.', reply_markup=choose_chat_type_keyboard)
 
 
@@ -83,16 +82,16 @@ async def get(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state='1_function')
 async def get_1(message: types.Message, state: FSMContext):
-    global fst
     await message.answer('Введите 2-ую функцию вида y = f(x)')
     await state.set_state('2_function')
-    fst = message.text
+    await state.update_data(fst=message.text)
 
 
 @dp.message_handler(state='2_function')
 async def get_2(message: types.Message, state: FSMContext):
     await state.set_state('*')
-    global fst
+    data = await state.get_data()
+    fst = data['fst']
     await bot.send_message(message.from_id, 'Секунду...')
     scn = create(message.text.lower())
     fst = create(fst.lower())
