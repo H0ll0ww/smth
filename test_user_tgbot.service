@@ -1,0 +1,13 @@
+[Unit]
+Description=graph bot
+After=network.target
+
+[Service]
+User=test_user
+Group=test_user
+WorkingDirectory=/home/test_user/smth/
+Environment="PYTHONPATH=/home/test_user/smth/"
+ExecStart=/home/test_user/smth/.venv/bin/python /home/test_user/smth/graph_bot.py
+
+[Install]
+WantedBy=multi-user.target
