@@ -2,10 +2,10 @@ from aiogram import Bot, Dispatcher, executor, types
 from config import TOKEN
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import sin, cos, tan
+from numpy import sin, cos, tan, log
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
-from sympy import symbols, Eq, solve
+from sympy import symbols, Eq, solve, diff
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 
 
@@ -18,6 +18,41 @@ choose_chat_type_keyboard = ReplyKeyboardMarkup(resize_keyboard=True).insert(b1)
 back_keyboard = ReplyKeyboardMarkup(resize_keyboard=True).insert(b0)
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
+
+
+@dp.message_handler(commands=['derivative'], state='*')
+async def derivative(message: types.Message, state: FSMContext):
+    await state.set_state('der_function')
+    await message.answer('Введите функцию вида y = f(x).', reply_markup=back_keyboard)
+
+
+@dp.message_handler(state='der_function')
+async def der(message: types.Message, state: FSMContext):
+    await state.set_state('*')
+    if message.text != 'Back':
+        data = await state.get_data()
+        x = np.linspace(int(data['right_border']), int(data['left_border']),
+                        10*int(data['left_border']-data['right_border']))
+        x = symbols('x')
+        y = my_function(message.text, x)
+        y = diff(y, x)
+        plt.ylim(int(data['bottom_border']), int(data['high_border']))
+        plt.plot(x, y)
+        y = my_function(message.text, x)
+        plt.plot(x, y)
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title('Graph of ' + message.text)
+        plt.grid(True)
+        plt.axhline(0, color='black')
+        plt.axvline(0, color='black')
+        plt.savefig('graph.jpg')
+        file = open('graph.jpg', 'rb')
+        await message.bot.send_photo(message.from_id, file,
+                                     reply_markup=choose_chat_type_keyboard)
+        file.close()
+    else:
+        await message.answer('Действие отменено.', reply_markup=choose_chat_type_keyboard)
 
 
 @dp.message_handler(commands=['clear_board'], state='*')
