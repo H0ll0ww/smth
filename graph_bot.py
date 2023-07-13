@@ -1,3 +1,4 @@
+from __future__ import annotations
 from aiogram import Bot, Dispatcher, executor, types
 from config import TOKEN
 import matplotlib.pyplot as plt
@@ -5,7 +6,7 @@ import numpy as np
 from numpy import sin, cos, tan, log
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
-from sympy import symbols, Eq, solve, diff
+from sympy import symbols, Eq, solve, diff, lambdify
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 
 
@@ -14,7 +15,8 @@ b1 = KeyboardButton(r'/draw_graphic')
 b2 = KeyboardButton(r'/clear_board')
 b3 = KeyboardButton(r'/set_borders')
 b4 = KeyboardButton(r'/get_number_of_crossings')
-choose_chat_type_keyboard = ReplyKeyboardMarkup(resize_keyboard=True).insert(b1).insert(b2).add(b3).insert(b4)
+b5 = KeyboardButton(r'/derivative')
+choose_chat_type_keyboard = ReplyKeyboardMarkup(resize_keyboard=True).insert(b1).insert(b2).add(b3).insert(b4).add(b5)
 back_keyboard = ReplyKeyboardMarkup(resize_keyboard=True).insert(b0)
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
@@ -26,6 +28,27 @@ async def derivative(message: types.Message, state: FSMContext):
     await message.answer('Введите функцию вида y = f(x).', reply_markup=back_keyboard)
 
 
+def deriv(f, x, h=0.000001):
+    return (f(x + h) - f(x - h)) / (2 * h)
+
+
+def my_function(s, x) -> float:
+    s = s.replace(' ', '')
+    s = s.replace('^', '**')
+    s = s[2:]
+    n = len(s) - 1
+    for i in range(n):
+        if s[i].isdigit():
+            if s[i+1] == 'x':
+                n += 1
+                s = s[:i+1] + '*' + s[i+1:]
+        elif s[i] == 'x':
+            if s[i+1].isdigit():
+                n += 1
+                s = s[:i+1] + '*' + s[i+1:]
+    return eval(s)
+
+
 @dp.message_handler(state='der_function')
 async def der(message: types.Message, state: FSMContext):
     await state.set_state('*')
@@ -33,10 +56,10 @@ async def der(message: types.Message, state: FSMContext):
         data = await state.get_data()
         x = np.linspace(int(data['right_border']), int(data['left_border']),
                         10*int(data['left_border']-data['right_border']))
-        x = symbols('x')
-        y = my_function(message.text, x)
-        y = diff(y, x)
+        def bounded_function(x): return my_function(message.text, x)
+        y = deriv(bounded_function, x)
         plt.ylim(int(data['bottom_border']), int(data['high_border']))
+        await bot.send_message(message.from_id, 'Секунду...')
         plt.plot(x, y)
         y = my_function(message.text, x)
         plt.plot(x, y)
@@ -94,21 +117,6 @@ def create(s):
     return s
 
 
-def my_function(s, x):
-    s = s.replace(' ', '')
-    s = s.replace('^', '**')
-    s = s[2:]
-    n = len(s) - 1
-    for i in range(n):
-        if s[i].isdigit():
-            if s[i+1] == 'x':
-                n += 1
-                s = s[:i+1] + '*' + s[i+1:]
-        elif s[i] == 'x':
-            if s[i+1].isdigit():
-                n += 1
-                s = s[:i+1] + '*' + s[i+1:]
-    return eval(s)
 
 
 @dp.message_handler(commands=['get_number_of_crossings'], state='*')
