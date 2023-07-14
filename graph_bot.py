@@ -2,22 +2,14 @@ from __future__ import annotations
 from aiogram import Bot, Dispatcher, executor, types
 from config import TOKEN
 import matplotlib.pyplot as plt
-import numpy as np
-from numpy import sin, cos, tan, log
+from my_functions import *
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
-from sympy import symbols, Eq, solve, diff, lambdify
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
+from sympy import symbols, Eq, solve
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
+from keyboards import choose_chat_type_keyboard, back_keyboard
 
 
-b0 = KeyboardButton('Back')
-b1 = KeyboardButton(r'/draw_graphic')
-b2 = KeyboardButton(r'/clear_board')
-b3 = KeyboardButton(r'/set_borders')
-b4 = KeyboardButton(r'/get_number_of_crossings')
-b5 = KeyboardButton(r'/derivative')
-choose_chat_type_keyboard = ReplyKeyboardMarkup(resize_keyboard=True).insert(b1).insert(b2).add(b3).insert(b4).add(b5)
-back_keyboard = ReplyKeyboardMarkup(resize_keyboard=True).insert(b0)
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
@@ -26,27 +18,6 @@ dp = Dispatcher(bot, storage=MemoryStorage())
 async def derivative(message: types.Message, state: FSMContext):
     await state.set_state('der_function')
     await message.answer('Введите функцию вида y = f(x).', reply_markup=back_keyboard)
-
-
-def deriv(f, x, h=0.000001):
-    return (f(x + h) - f(x - h)) / (2 * h)
-
-
-def my_function(s, x) -> float:
-    s = s.replace(' ', '')
-    s = s.replace('^', '**')
-    s = s[2:]
-    n = len(s) - 1
-    for i in range(n):
-        if s[i].isdigit():
-            if s[i+1] == 'x':
-                n += 1
-                s = s[:i+1] + '*' + s[i+1:]
-        elif s[i] == 'x':
-            if s[i+1].isdigit():
-                n += 1
-                s = s[:i+1] + '*' + s[i+1:]
-    return eval(s)
 
 
 @dp.message_handler(state='der_function')
@@ -94,29 +65,6 @@ async def start_handler(message: types.Message, state: FSMContext):
 async def get_graph(message: types.Message, state: FSMContext):
     await message.answer('Введите функцию вида y = f(x)', reply_markup=back_keyboard)
     await state.set_state('function')
-
-
-def create1(s, x):
-    return eval(s)
-
-
-def create(s):
-    s = s.replace(' ', '')
-    s = s.replace('^', '**')
-    s = s[2:]
-    n = len(s) - 1
-    for i in range(n):
-        if s[i].isdigit():
-            if s[i+1] == 'x':
-                n += 1
-                s = s[:i+1] + '*' + s[i+1:]
-        elif s[i] == 'x':
-            if s[i+1].isdigit():
-                n += 1
-                s = s[:i+1] + '*' + s[i+1:]
-    return s
-
-
 
 
 @dp.message_handler(commands=['get_number_of_crossings'], state='*')
